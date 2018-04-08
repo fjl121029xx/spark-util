@@ -17,54 +17,100 @@ import scala.collection.JavaConversions._
 import org.apache.spark.api.java.JavaSparkContext.fakeClassTag
 class SparkHBaseContext(
     @transient val sc: SparkContext,
-    @transient config: Configuration) extends Serializable {
-  val conf = sc.broadcast(new SerializableWritable(config))
-  val zookeeper=conf.value.value.get("hbase.zookeeper.quorum")
+    @transient conf: Configuration) extends Serializable {
+  //val conf = sc.broadcast(new SerializableWritable(config))
+  // val zookeeper = conf.get("hbase.zookeeper.quorum","")
+
   /**
    * scan Hbase To RDD
    */
-  def bulkScanRDD[T:ClassTag](
+  def bulkScanRDD[T: ClassTag](
+    zk: String,
     tableName: String,
     scan: Scan,
-    f: ((ImmutableBytesWritable, Result)) => T):RDD[T]= {
-    var job: Job = new Job(conf.value.value)
+    f: ((ImmutableBytesWritable, Result)) => T): RDD[T] = {
+    val job = getHbaseBulkJob(zk, tableName)
     TableMapReduceUtil.initTableMapperJob(tableName, scan, classOf[IdentityTableMapper], null, null, job)
-    sc.newAPIHadoopRDD(job.getConfiguration(),
+    sc.newAPIHadoopRDD(job.getConfiguration,
       classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
       classOf[Result]).map(f)
   }
-  /*
-   * 读取全部hbase数据
+  /**
+   * @author LMQ
+   * @time 2018-04-08
+   * @func 获取hbase读取的job
    */
-  def bulkAllRDD[T:ClassTag](
-      tableName: String,
-      f: ((ImmutableBytesWritable, Result)) => T):RDD[T]= {
-    var job: Job = new Job(conf.value.value)
+  def getHbaseBulkJob(
+    zk: String,
+    tableName: String) = {
+    conf.set(TableInputFormat.INPUT_TABLE, tableName)
+    conf.set("hbase.zookeeper.quorum", zk)
+    conf.set("hbase.zookeeper.property.clientPort", "2181")
+    new Job(conf)
+  }
+  /**
+   * @author LMQ
+   * @time 2018-04-08
+   * @func 读取hbase的所有数据
+   */
+  def bulkAllRDD[T: ClassTag](
+    zk: String,
+    tableName: String,
+    f: ((ImmutableBytesWritable, Result)) => T): RDD[T] = {
+    val job = getHbaseBulkJob(zk, tableName)
     sc.newAPIHadoopRDD(job.getConfiguration(),
       classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
       classOf[Result]).map(f)
   }
-  def bulkGetRDD[T, U](
+  /**
+   * @author LMQ
+   * @time 2018-04-08
+   * @func 读取hbase的所有数据
+   */
+  def bulkAllRDD[T: ClassTag](
+    zk: String,
     tableName: String,
-    batchSize: Int,//get batch
-    rdd: RDD[T],
-    makeGet: (T) => Get,
-    convertResult: (Result) => U): RDD[U] = {
-    rdd.mapPartitions[U]{it =>
-    val table=HbaseConnectionCache.getTable(zookeeper, tableName)
-    it.grouped(batchSize).flatMap { ts =>
-      table.get(ts.map { makeGet(_) }.toList)
-      .filter { x => x!=null && !x.isEmpty() }
-    }.map { convertResult(_) }
-    } (fakeClassTag[U])
+    conf: Configuration,
+    f: ((ImmutableBytesWritable, Result)) => T): RDD[T] = {
+    var job: Job = new Job(conf)
+    sc.newAPIHadoopRDD(job.getConfiguration(),
+      classOf[TableInputFormat],
+      classOf[ImmutableBytesWritable],
+      classOf[Result]).map(f)
   }
+  /**
+   * @author LMQ
+   * @time 2018-04-08
+   * @func 批量gethbase的数据
+   */
   def bulkGetRDD[T, U](
+    zookeeper: String,
+    tableName: String,
+    batchSize: Int, //get batch
+    rdd: RDD[T],
+    makeGet: (T) => Get,
+    convertResult: (Result) => U): RDD[U] = {
+    rdd.mapPartitions[U] { it =>
+      val table = HbaseConnectionCache.getTable(zookeeper, tableName)
+      it.grouped(batchSize).flatMap { ts =>
+        table.get(ts.map { makeGet(_) }.toList)
+          .filter { x => x != null && !x.isEmpty() }
+      }.map { convertResult(_) }
+    }(fakeClassTag[U])
+  }
+  /**
+   * @author LMQ
+   * @time 2018-04-08
+   * @func 批量gethbase的数据
+   */
+  def bulkGetRDD[T, U](
+    zk: String,
     tableName: String,
     rdd: RDD[T],
     makeGet: (T) => Get,
     convertResult: (Result) => U): RDD[U] = {
-    bulkGetRDD(tableName, 1000, rdd, makeGet, convertResult)
+    bulkGetRDD(zk, tableName, 1000, rdd, makeGet, convertResult)
   }
 }
