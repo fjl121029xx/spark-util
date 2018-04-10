@@ -8,10 +8,11 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 class HbaseDataWriterFunc[T](rdd:RDD[T]) {
   
   def writeToHbase(
+      zk:String,
       table:String,
       conf:Configuration,
       f:T=>(ImmutableBytesWritable, Put)){
-    val hconf=createJob(table, conf)
+    val hconf=createJob(zk,table, conf)
     rdd.map( f )
        .saveAsNewAPIHadoopDataset(hconf)
   }
