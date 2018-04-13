@@ -30,8 +30,9 @@ class KafkaOffsetUtil(
    */
   def recordDayOffsetsToZK(
     day: String,
-    topics: Set[String] = null,
-    parentPath: String = defualtPath): Either[String, Boolean] = {
+    topics: Set[String],
+    parentPath: String = defualtPath
+    ): Either[String, Boolean] = {
     val offsetPath = parentPath + "/" + day
     val recordTopic = if (topics == null || topics.isEmpty) {
       val alltopics = getAlltopics.toSet
@@ -58,13 +59,26 @@ class KafkaOffsetUtil(
    * /consumer/groupid/20180413/18/topicname/partition/offset
    */
   def recordDayHourOffsetToZK(
-    topics: Set[String],
     day: String,
     hour: String,
-    parentPath: String = defualtPath) {
-
-    
-    
+    topics: Set[String],
+    parentPath: String = defualtPath
+    ): Either[String, Boolean] =  {
+    val offsetPath = parentPath + "/" + day+"/"+hour
+    val recordTopic = if (topics == null || topics.isEmpty) {
+      val alltopics = getAlltopics.toSet
+      LOG.warn("Topics Is Null : "+alltopics.mkString(","))
+      alltopics
+    } else topics
+    zkUtil.createMultistagePath(offsetPath)
+    recordTopic.foreach { topic =>
+      val topicsOffset = kafkautil.getLatestLeaderOffsets(Set(topic), zkUtil.zkClient)
+      val result=recordOffsetToZK(topic, topicsOffset, offsetPath)
+      if(result.isLeft){
+        return result
+      }
+    }
+     new Right(true)
     
   }
 /**
@@ -100,11 +114,16 @@ class KafkaOffsetUtil(
    * @func：获取某一天，某个topic的offset
    */
   def getDayOffsetsFromZK(
-      topics:Set[String],
       day:String,
+      topics:Set[String],
       parentPath:String = defualtPath
       ): Either[String, Map[TopicAndPartition,Long]]={
-    val topicOffsets=topics.flatMap { topic =>
+     val readTopic = if (topics == null || topics.isEmpty) {
+      val alltopics = getAlltopics.toSet
+      LOG.warn("Topics Is Null : "+alltopics.mkString(","))
+      alltopics
+    } else topics
+    val topicOffsets=readTopic.flatMap { topic =>
       val topicOffset=getDayOffsetFromZK(topic, day, parentPath)
       if(topicOffset.isLeft){
         return topicOffset
@@ -112,7 +131,25 @@ class KafkaOffsetUtil(
     }.toMap
     new Right(topicOffsets)
   }
-  
+    /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：获取某一天，某个topic的offset
+   */
+  def getDayHourOffsetsFromZK(
+      day:String,
+      hour:String,
+      topics:Set[String],
+      parentPath:String = defualtPath
+      ): Either[String, Map[TopicAndPartition,Long]]={
+    val topicOffsets=topics.flatMap { topic =>
+      val topicOffset=getDayHourOffsetFromZK(topic, day, hour,parentPath)
+      if(topicOffset.isLeft){
+        return topicOffset
+      }else topicOffset.right.get
+    }.toMap
+    new Right(topicOffsets)
+  }
  /**
    * @author LMQ
    * @time 2018-04-13
@@ -135,7 +172,29 @@ class KafkaOffsetUtil(
     	new Right(map.toMap)
     }else new Left("Topic Path Not Exist : "+topicPath)
   }
-  
+ /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：获取某一天，某个topic的offset
+   */
+  def getDayHourOffsetFromZK(
+      topic:String,
+      day:String,
+      hour:String,
+      parentPath:String = defualtPath
+      ): Either[String, Map[TopicAndPartition,Long]]={
+    val topicPath = parentPath + "/" + day+"/"+hour+"/"+topic
+    if(zkUtil.isExist(topicPath)){
+    	val topicAndPart=kafkautil.getTopicAndPartitions(Set(topic))
+      val map=topicAndPart.map { tp => 
+    			val partpath = s"""${topicPath}/${tp.partition}"""
+    			if(zkUtil.isExist(topicPath)){
+    			  (tp->zkUtil.readData(partpath).toLong)
+    			}else return new Left("Part Path Not Exist : "+partpath)
+    	}
+    	new Right(map.toMap)
+    }else new Left("Topic Path Not Exist : "+topicPath)
+  } 
   /**
    * @author LMQ
    * @time 2018-04-13

@@ -8,7 +8,7 @@ kafka version 0.8 <br>
 * 提供 recordDayOffsetsToZK 来将当天最新的 offset 写入zk对应路径下
 * 提供recordDayHourOffsetToZK 来按 每天每小时来记录topic的offset
 # Example 
-
+> 记录某天的topic 的最新offset
 ```
     val groupid = "kafkadayoffset"
     val day = "20180115"
@@ -19,6 +19,23 @@ kafka version 0.8 <br>
     val kafkaoffsetUtil = KafkaOffsetUtil(kafkaParams, zk)
     kafkaoffsetUtil.recordDayOffsetsToZK(day, topics)//记录当天的offset
     val res = kafkaoffsetUtil.getDayOffsetsFromZK(topics, day)//拉取某天的offset
+    if (res.isLeft) 
+      println(res.left.get)
+     else 
+    res.right.get.foreach(println)
+```
+
+> 记录某天某时的topic 的最新offset
+```
+    val groupid = "kafkadayoffset"
+    val day = "20180115"
+    var kafkaParams = Map[String, String](
+      "metadata.broker.list" -> broker,
+      "serializer.class" -> "kafka.serializer.StringEncoder",
+      "group.id" -> groupid)
+    val kafkaoffsetUtil = KafkaOffsetUtil(kafkaParams, zk)
+    kafkaoffsetUtil.recordDayHourOffsetToZK(day,hour,topics)
+    val res = kafkaoffsetUtil.getDayHourOffsetsFromZK(day, hour, topics)
     if (res.isLeft) 
       println(res.left.get)
      else 

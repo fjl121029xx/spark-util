@@ -8,24 +8,24 @@ object Test {
   val smp = new SimpleDateFormat("yyyyMMdd")
   PropertyConfigurator.configure("conf/log4j.properties")
   val LOG=LoggerFactory.getLogger("Test")
-  val zk="solr1,solr2,datanode37"
+  val zk="192.168.0.235,192.168.0.231,192.168.0.234"
   val broker = "kafka1,kafka2,kafka3"
-  val topics = Set("test")
+  val topics = Set("test","117--12")
   def main(args: Array[String]): Unit = {
     val groupid = "kafkadayoffset"
-    val day = "20180115"
+    val day = "20180413"
+    val hour="18"
     var kafkaParams = Map[String, String](
       "metadata.broker.list" -> broker,
       "serializer.class" -> "kafka.serializer.StringEncoder",
       "group.id" -> groupid)
     val kafkaoffsetUtil = KafkaOffsetUtil(kafkaParams, zk)
-    kafkaoffsetUtil.recordDayOffsetsToZK(day, topics)
-
-    val res = kafkaoffsetUtil.getDayOffsetsFromZK(topics, day)
+    kafkaoffsetUtil.recordDayHourOffsetToZK(day,hour,null)
+    /*val res = kafkaoffsetUtil.getDayHourOffsetsFromZK(day, hour,topics)
     if (res.isLeft) {
       LOG.info(res.left.get)
     } else res.right.get.foreach(println)
-      LOG.info(">>>>>>>>>>>>>")
+      LOG.info(">>>>>>>>>>>>>")*/
   }
 
 }
