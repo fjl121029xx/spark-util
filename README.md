@@ -1,23 +1,26 @@
-# 用于获取kafka每个topic的偏移量并记录至zk
-scala version 2.10
-spark version 1.6.0
-kafka version 0.8
+# 用于获取kafka每个topic的偏移量并记录至zk <br>
+scala version 2.10 <br>
+spark version 1.6.0 <br>
+kafka version 0.8 <br>
 
-* 
+* 主要是用于记录kafka各个topic的偏移量的，以方便每天的重算等，建议每天凌晨0点的时候运行一次，如果不放心，可以没小时执行一次 <br>
+* 支持的功能：支持按日期来存储topic的offset到zookeeper上
+* 提供 recordDayOffsetsToZK 来将当天最新的 offset 写入zk对应路径下
+* 提供recordDayHourOffsetToZK 来按 每天每小时来记录topic的offset
 # Example 
 
 ```
-  def main(args: Array[String]): Unit = {
-  val groupid="kafkatopicoffset"
-  val day="20180115"
-  var kafkaParams = Map[String, String](
-      "metadata.broker.list" ->broker ,
+    val groupid = "kafkadayoffset"
+    val day = "20180115"
+    var kafkaParams = Map[String, String](
+      "metadata.broker.list" -> broker,
       "serializer.class" -> "kafka.serializer.StringEncoder",
       "group.id" -> groupid)
-  //write offset to zk
-  KafkaOffsetRecord.recordKafkaOffset(kafkaParams, groupid, day, zk, Set("test"))
-  //read offset from zk 
-  KafkaOffsetRecord.getKafkaOffset(kafkaParams, groupid, day, zk, broker, Set("test"))
-  }
-  
+    val kafkaoffsetUtil = KafkaOffsetUtil(kafkaParams, zk)
+    kafkaoffsetUtil.recordDayOffsetsToZK(day, topics)//记录当天的offset
+    val res = kafkaoffsetUtil.getDayOffsetsFromZK(topics, day)//拉取某天的offset
+    if (res.isLeft) 
+      println(res.left.get)
+     else 
+    res.right.get.foreach(println)
 ```

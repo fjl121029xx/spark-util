@@ -3,60 +3,59 @@ package com.kafka.zk.util
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils.ZKStringSerializer
 import org.apache.zookeeper.CreateMode
+import org.slf4j.LoggerFactory
 
-object ZookeeperUtil {
+class ZookeeperUtil(val zk:String) {
   val PERSISTENT = CreateMode.PERSISTENT //短暂，持久
   val EPHEMERAL = CreateMode.EPHEMERAL
-  var zkClient:ZkClient=null
+  var zkClient:ZkClient=getzkClient(zk)
+  lazy val LOG=LoggerFactory.getLogger("ZookeeperUtil")
   def getzkClient(zk: String) = {
     if(zkClient==null){
      zkClient = new ZkClient(zk, 10000, 10000, ZKStringSerializer)
     }
     zkClient
   }
-  def isExist(
-    zkClient: ZkClient,
-    path: String) = {
+  def isExist(path: String) = {
     zkClient.exists(path)
   }
   /**
    * 功能：创建目录，如果不存在就创建。
    */
   def createFileOrDir(
-    zkClient: ZkClient,
     path: String,
-    data: String = "") = {
-    if (!zkClient.exists(path))
+    data: String = ""):Either[String,Boolean] = {
+    if (!zkClient.exists(path)){
       try {
         zkClient.create(path, data, PERSISTENT)
+        new Right(true)
       } catch {
         case t: Throwable =>
-          t.printStackTrace();
-          println("多级目录请使用 createMultistagePath 方法")
-          "Error"
+          LOG.error("多级目录请使用 createMultistagePath 方法")
+          LOG.error(t.toString())
+          new Left(t.toString()+"\n" + t.getStackTraceString)
       }
-    else "is exist"
+    }else new Right(true)
   }
   /**
    * 功能：创建多级目录
    */
-  def createMultistagePath(zkClient: ZkClient, path: String) {
+  def createMultistagePath(path: String) {
     val paths = path.split("/")
     var curentpath = ""
     paths.foreach { file =>
       if (!file.isEmpty()) {
         curentpath = curentpath + "/" + file
-        createFileOrDir(zkClient, curentpath)
+        createFileOrDir(curentpath)
       }
     }
   }
+  
   def readData(
-    zkClient: ZkClient,
     path: String) = {
     zkClient.readData(path).toString()
   }
   def writeData(
-    zkClient: ZkClient,
     path: String,
     data: String) = {
     if (!zkClient.exists(path)) {

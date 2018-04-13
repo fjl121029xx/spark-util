@@ -54,13 +54,7 @@ class KafkaUtil(val kafkaParams: Map[String, String]) {
     }
     null
   }
-  /**
-   * 时间：2018-01-12
-   * 功能：获取kakfa中的所有topic
-   */
-  def getAlltopics(zkClient: ZkClient) = {
-    AdminUtils.fetchAllTopicConfigs(zkClient).keySet
-  }
+
 
   /**
    * 时间：2018-01-12
