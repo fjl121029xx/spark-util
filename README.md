@@ -1,6 +1,5 @@
 # 用于获取kafka每个topic的偏移量并记录至zk <br>
 scala version 2.10 <br>
-spark version 1.6.0 <br>
 kafka version 0.8 <br>
 
 * 主要是用于记录kafka各个topic的偏移量的，以方便每天的重算等，建议每天凌晨0点的时候运行一次，如果不放心，可以没小时执行一次 <br>
