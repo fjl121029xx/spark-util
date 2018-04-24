@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>kafka-util</groupId>
   <artifactId>kafka-util</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <name>${project.artifactId}</name>
   <description>My wonderfull scala app</description>
   <inceptionYear>2015</inceptionYear>
