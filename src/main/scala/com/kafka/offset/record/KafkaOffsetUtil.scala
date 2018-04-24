@@ -6,6 +6,7 @@ import kafka.common.TopicAndPartition
 import org.slf4j.LoggerFactory
 import kafka.admin.AdminUtils
 import kafka.common.TopicAndPartition
+import kafka.utils.ZkUtils
 /**
  * @func ： 对外的工具类，提供各类的kafka操作
  * @author LMQ
@@ -32,7 +33,7 @@ class KafkaOffsetUtil(
     day: String,
     topics: Set[String],
     parentPath: String = defualtPath
-    ): Either[String, Boolean] = {
+    ): Either[String, Map[TopicAndPartition, Long]] = {
     val offsetPath = parentPath + "/" + day
     val recordTopic = if (topics == null || topics.isEmpty) {
       val alltopics = getAlltopics.toSet
@@ -40,14 +41,15 @@ class KafkaOffsetUtil(
       alltopics
     } else topics
     zkUtil.createMultistagePath(offsetPath)
-    recordTopic.foreach { topic =>
+    val offsets=recordTopic.flatMap { topic =>
       val topicsOffset = kafkautil.getLatestLeaderOffsets(Set(topic), zkUtil.zkClient)
       val result=recordOffsetToZK(topic, topicsOffset, offsetPath)
       if(result.isLeft){
-        return result
+        return new Left(result.left.get)
       }
-    }
-     new Right(true)
+      topicsOffset
+    }.toMap
+     new Right(offsets)
   }
 
   /**
@@ -201,7 +203,27 @@ class KafkaOffsetUtil(
    * @func：获取所有的 topic name
    */
   def getAlltopics() = {
-    AdminUtils.fetchAllTopicConfigs(zkUtil.zkClient).keySet
+    ZkUtils.getAllTopics(zkUtil.zkClient)
+  }
+  def isExist(path:String)={
+    zkUtil.isExist(path)
+  }
+  def deletePath(path:String)={
+    zkUtil.deletePath(path)
+  }
+  def createFileOrDir(
+      path:String,
+      data:String,
+      overWrite:Boolean=false
+      )={
+    if(zkUtil.isExist(path)){
+      if(overWrite){
+        zkUtil.deletePath(path)
+        zkUtil.createFileOrDir(path, data)
+      }
+    }else zkUtil.createFileOrDir(path, data)
+    
+    
   }
   /**
    * @author LMQ
