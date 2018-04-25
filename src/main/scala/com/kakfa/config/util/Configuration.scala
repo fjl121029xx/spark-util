@@ -3,7 +3,7 @@ package com.kakfa.config.util
 import java.util.HashMap
 
 trait Configuration extends Serializable{
-  private var conf:HashMap[String,String]=new HashMap[String,String]
+  private var conf:HashMap[String,String]=new HashMap[String,String]  
   def containsKey(key:String)=conf.containsKey(key)
   def getString(key:String,default:String)={
     if(conf.containsKey(key)) conf.get(key)
