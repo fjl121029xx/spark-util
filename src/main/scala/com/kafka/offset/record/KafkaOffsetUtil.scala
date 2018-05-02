@@ -199,6 +199,23 @@ private[kafka] class KafkaOffsetUtil(
     } else new Left("Topic Path Not Exist : " + topicPath)
   }
   /**
+   * @func 获取某天的offset的路径
+   */
+  def getDayOffsetPath(
+      day:String,
+      parentPath: String = consumerPath)={
+    consumerPath + "/" + day
+  }
+  /**
+   * @func 获取某天某小时的offset的路径
+   */
+  def getDayHourOffsetPath(
+      day:String,
+      hour:String,
+      parentPath: String = consumerPath)={
+    consumerPath + "/" + day + "/" + hour
+  }
+  /**
    * @author LMQ
    * @time 2018-04-13
    * @func：获取所有的 topic name
@@ -206,12 +223,36 @@ private[kafka] class KafkaOffsetUtil(
   def getAlltopics() = {
     ZkUtils.getAllTopics(zkUtil.zkClient)
   }
+  /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：判断某目录是否存在
+   */
   def isExist(path: String) = {
     zkUtil.isExist(path)
   }
+  /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：删除某个路径
+   */
   def deletePath(path: String) = {
     zkUtil.deletePath(path)
   }
+   /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：递归删除某个路径
+   */
+  def deleteRecursive(path: String) = {
+    zkUtil.deleteRecursive(path)
+  }
+    /**
+   * @author LMQ
+   * @time 2018-04-13
+   * @func：创建文件
+   * overWrite : 如果存在是否覆盖
+   */
   def createFileOrDir(
     path: String,
     data: String,

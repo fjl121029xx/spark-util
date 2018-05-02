@@ -22,6 +22,9 @@ class ZookeeperUtil(val zk: String) {
   def deletePath(path: String) = {
     zkClient.delete(path)
   }
+  def deleteRecursive(path: String) = {
+    zkClient.deleteRecursive(path)
+  }
   /**
    * 功能：创建目录，如果不存在就创建。
    */
