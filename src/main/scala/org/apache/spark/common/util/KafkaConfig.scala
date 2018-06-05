@@ -7,13 +7,27 @@ import java.util.HashMap
  * @description 专门用于kafka等配置
  * @description spark相关的都用到这个kafkaconfig
  */
-trait KafkaConfig extends Configuration{
+class KafkaConfig extends Configuration{
   private var conf:HashMap[String,String]=new HashMap[String,String]
   var kafkaParams: Map[String, String]=null
   var topics:Set[String]=null
   var groupid:String=null
+  def this(path:String){
+    this()
+    ConfigurationFactoryTool.initConf(path, this)
+  }
+  def this(kp: Map[String, String]){
+    this()
+    setKafkaParams(kp)
+  }
+  def this(path:String,kp: Map[String, String]){
+    this()
+    setKafkaParams(kp)
+    ConfigurationFactoryTool.initConf(path, this)
+  }
   def setKafkaParams(kp: Map[String, String]){
     kafkaParams=kp
+    this.groupid=kafkaParams.getOrElse("group.id", "test")
   }
   def getKafkaParams()={
     kafkaParams
