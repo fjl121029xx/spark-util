@@ -116,7 +116,9 @@ private[spark] object SparkContextKafkaManager
    * @author LMQ
    * @description 获取自定义的offset值
    * @description 这个方法主要适用于 ： 如果程序想要重算某个时间点或者从指定的offset开始
-   * 							例如程序需要重算今天的所有数据（前提你记录了今天凌晨的offset。这个我之后会有程序来提供每天记录所有topic凌晨的offset）
+   * 							例如程序需要重算今天的所有数据
+   *              （前提你记录了今天凌晨的offset。这个我之后会有程序来提供每天记录所有topic凌晨的offset）
+   *                https://github.com/LinMingQiang/kafka-util 
    * @attention 这个方法只有在 配置 kafka.consumer.from = CUSTOM才生效
    *            同时必须要有一个 kafka.offset 的配置
    *            具体的 数据格式在readme.md里面有解释
