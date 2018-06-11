@@ -202,6 +202,19 @@ class SparkKafkaContext {
   }
 }
 object SparkKafkaContext extends SparkKafkaConfsKey {
+   /**
+   * @author LMQ
+   * @description 获取kafka的配置，一般不做特殊的配置，用这个就够了
+   * @param brokers :kafka brokers
+   * @param groupid :kafka groupid
+   * @param consumer_from :kafak 从哪开始消费  
+   * 			last ： 从最新数据开始
+   * 			earliest ：从最早数据开始
+   *      consum： 从上次消费点继续
+   *      custom：自定义消费
+   * @param :wrong_from ：如果kafka的offset出现问题，导致你读不到，这里配置是从哪里开始读取
+   * @param kafkaoffset ： 自定义offset  
+   */
   def getKafkaParam(
     brokers: String,
     groupid: String,
